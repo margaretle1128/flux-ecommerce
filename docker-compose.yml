@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"  # Expose backend on port 3000
+    volumes:
+      - ./admin:/usr/src/app
+    environment:
+      NODE_ENV: development
+      MONGODB_URI: mongodb://mongodb:27017/mydatabase
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"  # Expose frontend on port 3001
+    volumes:
+      - ./frontend:/usr/src/app
+    environment:
+      NODE_ENV: development
+      API_URL: http://localhost:3000  # Point frontend to the backend
+    command: npm run dev -- -p 3001  # Run Next.js on port 3001
+
+  mongodb:
+    image: mongo:latest
+    container_name: flux-ecommerce-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/db:/data/db
