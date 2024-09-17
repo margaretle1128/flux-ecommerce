@@ -1,9 +1,9 @@
 import { mongooseConnect } from "@/lib/mongoose";
 import { Category } from "@/models/Category";
+import { Product } from "@/models/Product"; 
 import { authOptions, isAdminRequest } from './auth/[...nextauth]';
 import Redis from 'ioredis';
 
-// Initialize Redis client
 const redis = new Redis(process.env.REDIS_URL);
 
 export default async function handle(req, res) {
@@ -45,8 +45,15 @@ export default async function handle(req, res) {
 
     if (method === 'POST') {
         const { name, parentCategory, properties } = req.body;
+
+        if (!name || name.trim() === "") {
+            return res.status(400).json({ error: "Category name is required" });
+        }
+    
         const categoryDoc = await Category.create({
-            name, parent: parentCategory, properties,
+            name, 
+            parent: parentCategory && parentCategory.trim() !== "" ? parentCategory : null,  // Fix for empty parent category
+            properties,
         });
 
         await redis.del(allCategoriesCacheKey);
@@ -64,13 +71,36 @@ export default async function handle(req, res) {
     }
 
     if (method === 'DELETE') {
-        if (req.query?.id) {
-            await Category.deleteOne({ _id: req.query.id });
-
-            await redis.del(categoryCacheKey(req.query.id)); 
+        const { _id } = req.query;  
+    
+        if (!_id) {
+            return res.status(400).json({ error: "Category ID is required" });
+        }
+    
+        try {
+            // Check if the category exists
+            const category = await Category.findOne({ _id });
+            if (!category) {
+                return res.status(404).json({ error: "Category not found" });
+            }
+    
+            // Set the category to null for all products associated with the deleted category
+            await Product.updateMany({ category: _id }, { $set: { category: null } });
+    
+            // Now delete the category itself
+            const result = await Category.deleteOne({ _id });
+            if (result.deletedCount === 0) {
+                return res.status(404).json({ error: "Category not found" });
+            }
+    
+            // Clear cache for categories
             await redis.del(allCategoriesCacheKey); 
-
-            res.json(true);
+            await redis.del(categoryCacheKey(_id)); 
+    
+            return res.json({ message: "Category deleted successfully, and associated products' categories set to null" });
+        } catch (error) {
+            console.error("Error deleting category:", error);
+            return res.status(500).json({ error: "An error occurred while deleting the category" });
         }
     }
 }

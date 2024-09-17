@@ -6,28 +6,30 @@ services:
       context: ./admin
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"  # Expose backend on port 3000
+      - "3000:3000"  
     volumes:
       - ./admin:/usr/src/app
     environment:
       NODE_ENV: development
       MONGODB_URI: mongodb://mongodb:27017/mydatabase
       REDIS_URL: redis://redis:6379
+      ELASTICSEARCH_URL: http://elasticsearch:9200  
     depends_on:
       - mongodb
       - redis
+      - elasticsearch 
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "3001:3001"  # Expose frontend on port 3001
+      - "3001:3001"  
     volumes:
       - ./frontend:/usr/src/app
     environment:
       NODE_ENV: development
-      API_URL: http://localhost:3000  
+      API_URL: http://backend:3000  
     command: npm run dev -- -p 3001  
     depends_on:
       - backend
@@ -45,3 +47,16 @@ services:
     container_name: flux-ecommerce-redis
     ports:
       - "6379:6379"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
+    environment:
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+
+volumes:
+  esdata:
+    driver: local
