@@ -12,6 +12,10 @@ services:
     environment:
       NODE_ENV: development
       MONGODB_URI: mongodb://mongodb:27017/mydatabase
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - mongodb
+      - redis
 
   frontend:
     build:
@@ -23,8 +27,10 @@ services:
       - ./frontend:/usr/src/app
     environment:
       NODE_ENV: development
-      API_URL: http://localhost:3000  # Point frontend to the backend
-    command: npm run dev -- -p 3001  # Run Next.js on port 3001
+      API_URL: http://localhost:3000  
+    command: npm run dev -- -p 3001  
+    depends_on:
+      - backend
 
   mongodb:
     image: mongo:latest
@@ -33,3 +39,9 @@ services:
       - "27017:27017"
     volumes:
       - ./data/db:/data/db
+
+  redis:
+    image: redis:latest
+    container_name: flux-ecommerce-redis
+    ports:
+      - "6379:6379"
