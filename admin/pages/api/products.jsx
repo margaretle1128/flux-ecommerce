@@ -23,7 +23,13 @@ export default async function handle(req, res) {
                         title: { type: 'text' },
                         description: { type: 'text' },
                         price: { type: 'float' },
-                        category: { type: 'keyword' },
+                        category: { type: 'keyword' }, 
+                        properties: {
+                            properties: {
+                                color: { type: 'keyword' }, 
+                                storage: { type: 'keyword' }
+                            }
+                        }
                     }
                 }
             }
@@ -56,7 +62,7 @@ export default async function handle(req, res) {
                 await redis.set(cacheKey, JSON.stringify(product), 'EX', 3600);
                 await client.index({
                     index: 'products',
-                    id: product._id.toString(), // Pass _id here, not in document
+                    id: product._id.toString(), 
                     document: {
                         title: product.title,
                         description: product.description,
@@ -74,10 +80,46 @@ export default async function handle(req, res) {
             const skip = (page - 1) * limit;
             const allProductsCacheKey = `products_page_${page}`;
 
+            const { category, minPrice, maxPrice, sortPrice } = req.query;
+
+            let esQuery = { match_all: {} };
+            let filterClauses = [];
+
+            if (category) {
+                filterClauses.push({
+                    term: { category: category },
+                });
+            }
+
+            if (minPrice || maxPrice) {
+                const rangeFilter = {};
+                if (minPrice) rangeFilter.gte = parseFloat(minPrice);
+                if (maxPrice) rangeFilter.lte = parseFloat(maxPrice);
+                filterClauses.push({
+                    range: { price: rangeFilter },
+                });
+            }
+
+            if (filterClauses.length > 0) {
+                esQuery = {
+                    bool: {
+                        must: [{ match_all: {} }],
+                        filter: filterClauses,
+                    },
+                };
+            }
+
             const cachedProducts = await redis.get(allProductsCacheKey);
             if (cachedProducts) {
                 console.log('Returning cached product list');
                 return res.json(JSON.parse(cachedProducts));
+            }
+
+            let sortOptions = [];
+            if (sortPrice === 'asc') {
+                sortOptions.push({ price: 'asc' });
+            } else if (sortPrice === 'desc') {
+                sortOptions.push({ price: 'desc' });
             }
 
             const { body } = await client.search({
@@ -112,13 +154,13 @@ export default async function handle(req, res) {
             description,
             price,
             images,
-            category: category && category.trim() !== "" ? category : null, // Handle missing category
+            category: category && category.trim() !== "" ? category : null, 
             properties,
         });
 
         await client.index({
             index: 'products',
-            id: productDoc._id.toString(), // Pass _id here
+            id: productDoc._id.toString(), 
             document: {
                 title: productDoc.title,
                 description: productDoc.description,
