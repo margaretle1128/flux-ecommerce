@@ -7,6 +7,7 @@ This is a two-part project for an e-commerce platform, consisting of:
 ## Project Structure
 
 ### Admin Portal (Port 3000)
+<img width="1915" alt="image" src="https://github.com/user-attachments/assets/da1a4aa3-a75f-48da-8a8f-e9161c560588">
 
 The Admin Portal is designed to manage products, categories, and orders. Admin users can:
 - Add, edit, and delete products
@@ -14,6 +15,7 @@ The Admin Portal is designed to manage products, categories, and orders. Admin u
 - View and manage orders
 
 ### Main Website (Port 3001)
+<img width="1917" alt="image" src="https://github.com/user-attachments/assets/d4a19598-a60f-4c34-9c1f-bbea3a4bbf3f">
 
 The Main Website is a customer-facing platform where users can:
 - Browse products by category
