@@ -155,5 +155,3 @@ You can run the application with **Docker** or **locally**.
 - Redis caching is available as an optional performance optimization.
 
 ```
-
-This `README.md` covers the setup, running the project, and includes API endpoints without mentioning Elasticsearch. You can adapt the content based on any additional details you might want to include.
